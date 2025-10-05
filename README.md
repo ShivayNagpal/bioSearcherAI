@@ -12,7 +12,7 @@ An interactive biology word search game powered by sophisticated LangGraph AI ag
 
 - **🤖 LangGraph AI Agents**: Multi-node workflow for sophisticated topic research
 - **📚 Smart Research**: Wikipedia integration with content analysis
-- **🧠 Intelligent Word Selection**: Extracts relevant terms + adds strategic distractors
+- **🧠 Intelligent Word Selection**: Extracts relevant terms + dynamically generates contextual distractors
 - **🎲 Dynamic Puzzles**: Claude Sonnet 4.5 generates custom 15x15 grids
 - **🎮 Interactive Gameplay**: Drag-to-select words in any direction
 - **📊 Educational Results**: Detailed scoring with missed word reveals
@@ -21,12 +21,14 @@ An interactive biology word search game powered by sophisticated LangGraph AI ag
 ## How It Works
 
 1. **Topic Input**: User enters any biology topic via Next.js frontend
-2. **LangGraph Research**: Multi-agent workflow researches Wikipedia content
-3. **Term Extraction**: AI identifies 8-12 relevant biological terms
-4. **Distractor Selection**: Finds 6-8 terms from different biological areas
-5. **Grid Generation**: Claude creates optimized word search puzzle
-6. **Interactive Play**: Users find words without knowing the target list
-7. **Smart Scoring**: Shows results, missed words, and educational content
+2. **Topic Normalization**: AI extracts core biological entity from user queries (e.g., "parts of kidney" → "kidney")
+3. **LangGraph Research**: Multi-agent workflow researches Wikipedia with robust fallback strategies
+4. **Term Extraction**: AI identifies 8-12 relevant biological terms from Wikipedia content
+5. **Dynamic Distractor Generation**: AI generates contextually relevant distractor topics based on the main topic
+6. **Distractor Research**: Finds 6-8 terms from the dynamically selected distractor topic
+7. **Grid Generation**: Claude creates optimized word search puzzle
+8. **Interactive Play**: Users find words without knowing the target list
+9. **Smart Scoring**: Shows results, missed words, and educational content
 
 ## Quick Start
 
@@ -138,7 +140,10 @@ PORT=8000
 
 ### 🔍 AI Research Agent
 
-- Uses LangGraph workflow to search Wikipedia
+- Uses LangGraph workflow with multi-node architecture
+- Intelligent topic normalization for conversational queries
+- Robust Wikipedia search with multiple fallback strategies
+- Dynamic distractor topic generation tailored to the main subject
 - Extracts relevant biological terms automatically
 - Ensures educational accuracy and relevance
 
@@ -159,46 +164,6 @@ PORT=8000
 - Detailed score breakdown
 - Shows all target words (found and missed)
 - Encourages learning through discovery
-
-## Customization
-
-### Changing the Grid Size
-
-Edit `lib/game-engine.ts` and modify the `size` parameter in `generateWordSearchGrid()`.
-
-### Adding More Distractor Topics
-
-Extend the `distractorTopics` array in `game-engine.ts` with more biological areas.
-
-### Styling
-
-Customize the appearance by editing:
-
-- `tailwind.config.js` for colors and themes
-- `app/globals.css` for component styles
-- Individual component files for specific styling
-
-## Deployment
-
-The app can be deployed to any platform that supports Next.js:
-
-- **Vercel**: `vercel deploy`
-- **Netlify**: Connect your repository
-- **Railway/Render**: Deploy from GitHub
-
-Remember to set your `ANTHROPIC_API_KEY` environment variable in your deployment platform.
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
-
-## License
-
-MIT License - see LICENSE file for details.
 
 ---
 

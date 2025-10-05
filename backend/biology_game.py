@@ -1,13 +1,5 @@
-#!/usr/bin/env python3
-"""
-Biology Word Search Game using LangGraph and Claude - API Version
-"""
-
-import os
-import asyncio
 import random
-import re
-from typing import List, Dict, Tuple, Set
+from typing import List, Dict
 from dataclasses import dataclass
 from dotenv import load_dotenv
 
@@ -43,7 +35,7 @@ class BiologyGameAgent:
 
     def __init__(self, api_key: str):
         self.llm = ChatAnthropic(
-            model="claude-3-5-sonnet-20241022",  # Note: LangChain may need different model ID
+            model="claude-sonnet-4-5-20250929",
             anthropic_api_key=api_key,
             temperature=0.7
         )
@@ -72,30 +64,80 @@ class BiologyGameAgent:
         print(f"🔬 LangGraph Node: _research_topic starting for topic: {topic}")
 
         try:
-            # Search Wikipedia for the topic
-            print(f"📚 Searching Wikipedia for: {topic}")
-            search_results = wikipedia.search(topic, results=3)
-            print(f"📚 Wikipedia search results: {search_results}")
+            # First, use Claude to extract the core biological entity from the user's query
+            extraction_prompt = f"""
+            Extract the main biological topic or entity from this query: "{topic}"
 
-            if not search_results:
-                raise Exception(f"No Wikipedia results found for '{topic}'")
+            For example:
+            - "parts of kidney" -> "kidney"
+            - "functions of mitochondria" -> "mitochondria"
+            - "how does photosynthesis work" -> "photosynthesis"
+            - "cell membrane" -> "cell membrane"
 
-            # Get the page content
-            print(f"📄 Getting Wikipedia page: {search_results[0]}")
-            try:
-                page = wikipedia.page(search_results[0])
-                content = page.content[:2000]  # Limit content length
-            except wikipedia.exceptions.DisambiguationError as e:
-                # If there's ambiguity, use the first option
-                print(f"📄 Disambiguation found, using: {e.options[0]}")
-                page = wikipedia.page(e.options[0])
-                content = page.content[:2000]
-            except wikipedia.exceptions.PageError:
-                # If page doesn't exist, raise error
-                print(f"📄 Page not found for {search_results[0]}")
-                raise Exception(f"Wikipedia page not found for {search_results[0]}")
+            Return only the core biological term, nothing else:
+            """
 
-            print(f"📄 Got {len(content)} characters of content")
+            print("🤖 Extracting core biological topic...")
+            extraction_response = await self.llm.ainvoke(extraction_prompt)
+            normalized_topic = extraction_response.content.strip()
+            print(f"✨ Normalized topic: '{normalized_topic}' (from: '{topic}')")
+
+            # Try multiple search strategies
+            search_attempts = [
+                normalized_topic,
+                topic,
+                f"{normalized_topic} biology",
+                f"{normalized_topic} anatomy" if "part" in topic.lower() else normalized_topic
+            ]
+
+            content = None
+            successful_search = None
+
+            for attempt in search_attempts:
+                try:
+                    print(f"📚 Searching Wikipedia for: {attempt}")
+                    search_results = wikipedia.search(attempt, results=5)
+                    print(f"📚 Wikipedia search results: {search_results}")
+
+                    if not search_results:
+                        print(f"⚠️ No results for '{attempt}', trying next strategy...")
+                        continue
+
+                    # Try each search result until we get a valid page
+                    for result in search_results:
+                        try:
+                            print(f"📄 Attempting to get page: {result}")
+                            page = wikipedia.page(result, auto_suggest=False)
+                            content = page.content[:2000]
+                            successful_search = result
+                            print(f"✅ Successfully got content from: {result}")
+                            break
+                        except wikipedia.exceptions.DisambiguationError as e:
+                            # Try the first disambiguation option
+                            print(f"📄 Disambiguation found for {result}, trying: {e.options[0]}")
+                            try:
+                                page = wikipedia.page(e.options[0], auto_suggest=False)
+                                content = page.content[:2000]
+                                successful_search = e.options[0]
+                                print(f"✅ Successfully got content from disambiguation: {e.options[0]}")
+                                break
+                            except:
+                                continue
+                        except wikipedia.exceptions.PageError:
+                            print(f"⚠️ Page not found: {result}, trying next result...")
+                            continue
+
+                    if content:
+                        break
+
+                except Exception as e:
+                    print(f"⚠️ Error with search attempt '{attempt}': {e}")
+                    continue
+
+            if not content:
+                raise Exception(f"Could not find Wikipedia content for '{topic}' or '{normalized_topic}' after multiple attempts")
+
+            print(f"📄 Got {len(content)} characters of content from: {successful_search}")
 
             # Use Claude to extract relevant biological terms
             prompt = f"""
@@ -134,17 +176,27 @@ class BiologyGameAgent:
         topic = state["topic"]
         print(f"🎭 LangGraph Node: _find_distractors starting for topic: {topic}")
 
-        # Define some related biological areas that are different from common topics
-        distractor_topics = [
-            "plant photosynthesis", "bacterial reproduction", "insect anatomy",
-            "marine biology", "cellular respiration", "genetic mutation",
-            "viral structure", "fungal growth", "bird migration", "reptile metabolism"
-        ]
+        # Use Claude to generate a distractor topic
+        distractor_prompt = f"""
+        Given the main biology topic "{topic}", suggest 3 different but related biological topics that would make good distractor categories.
+        The topics should be clearly different from "{topic}" but still biological in nature.
 
-        # Remove any that might be too similar to the main topic
-        filtered_topics = [t for t in distractor_topics if not any(word in t.lower() for word in topic.lower().split())]
-        selected_topic = random.choice(filtered_topics[:3])
-        print(f"🎭 Selected distractor topic: {selected_topic}")
+        Return only a comma-separated list of 3 topics, no explanations:
+        """
+
+        print("🤖 Calling Claude to generate distractor topics...")
+        try:
+            distractor_response = await self.llm.ainvoke(distractor_prompt)
+            print(f"🤖 Claude distractor topics response: {distractor_response.content}")
+
+            distractor_topics = [t.strip() for t in distractor_response.content.split(",")]
+            selected_topic = random.choice(distractor_topics) if distractor_topics else "cellular biology"
+            print(f"🎭 Selected distractor topic: {selected_topic}")
+        except Exception as e:
+            print(f"⚠️ Error generating distractor topics: {e}")
+            # Fallback to a generic topic
+            selected_topic = "cellular biology"
+            print(f"🎭 Using fallback distractor topic: {selected_topic}")
 
         try:
             # Research the distractor topic
