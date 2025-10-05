@@ -43,6 +43,7 @@ An interactive biology word search game powered by sophisticated LangGraph AI ag
 ### Option 2: Manual Setup
 
 **Backend Setup:**
+
 ```bash
 cd backend
 python3 -m venv venv
@@ -54,6 +55,7 @@ python game_api.py
 ```
 
 **Frontend Setup:**
+
 ```bash
 npm install
 cp .env.example .env.local
@@ -64,12 +66,13 @@ npm run dev
 ## Environment Variables
 
 **Frontend (.env.local):**
+
 ```
-ANTHROPIC_API_KEY=your_claude_api_key_here
 PYTHON_API_URL=http://localhost:8000
 ```
 
 **Backend (backend/.env):**
+
 ```
 ANTHROPIC_API_KEY=your_claude_api_key_here
 DEBUG=false
@@ -121,32 +124,38 @@ PORT=8000
 ## API Architecture
 
 ### Python Backend (Port 8000)
+
 - `POST /api/game/create` - LangGraph agents create sophisticated games
 - `POST /api/game/submit` - Calculate results and reveal missed words
 - `GET /health` - Health check endpoint
 
 ### Next.js Frontend (Port 3000)
+
 - `POST /api/game/create` - Proxy to Python backend
 - `POST /api/game/submit` - Proxy to Python backend
 
 ## Key Features
 
 ### 🔍 AI Research Agent
+
 - Uses LangGraph workflow to search Wikipedia
 - Extracts relevant biological terms automatically
 - Ensures educational accuracy and relevance
 
 ### 🧩 Smart Puzzle Generation
+
 - Claude generates balanced word search grids
 - Includes both target words and challenging distractors
 - Supports horizontal, vertical, and diagonal word placement
 
 ### 🎮 Interactive Gameplay
+
 - Intuitive click-and-drag word selection
 - Real-time feedback on found words
 - No word list shown beforehand to increase difficulty
 
 ### 📊 Educational Results
+
 - Detailed score breakdown
 - Shows all target words (found and missed)
 - Encourages learning through discovery
@@ -154,13 +163,17 @@ PORT=8000
 ## Customization
 
 ### Changing the Grid Size
+
 Edit `lib/game-engine.ts` and modify the `size` parameter in `generateWordSearchGrid()`.
 
 ### Adding More Distractor Topics
+
 Extend the `distractorTopics` array in `game-engine.ts` with more biological areas.
 
 ### Styling
+
 Customize the appearance by editing:
+
 - `tailwind.config.js` for colors and themes
 - `app/globals.css` for component styles
 - Individual component files for specific styling
