@@ -79,31 +79,35 @@ PORT=8000
 ## Project Structure
 
 ```
-├── app/
-│   ├── api/game/           # API routes for game logic
-│   │   ├── create/         # Create new game endpoint
-│   │   └── submit/         # Submit game results endpoint
-│   ├── game/               # Game play page
-│   ├── results/            # Results and reveal page
-│   ├── globals.css         # Global styles
-│   ├── layout.tsx          # App layout
-│   └── page.tsx            # Home page
+├── backend/                    # Python LangGraph Backend
+│   ├── biology_game.py        # Sophisticated LangGraph AI agents
+│   ├── game_api.py           # Flask API server
+│   ├── requirements.txt      # Python dependencies
+│   └── .env                 # Backend environment variables
+├── app/                       # Next.js Frontend
+│   ├── api/game/             # API proxy routes (forwards to Python)
+│   │   ├── create/           # Create game proxy
+│   │   └── submit/           # Submit results proxy
+│   ├── game/                 # Game play page
+│   ├── results/              # Results and reveal page
+│   ├── globals.css           # Global styles
+│   ├── layout.tsx            # App layout
+│   └── page.tsx              # Home page
 ├── components/
-│   └── WordSearchGrid.tsx  # Interactive word search component
-├── lib/
-│   └── game-engine.ts      # Core game logic and AI integration
-└── types/
-    └── global.d.ts         # TypeScript type definitions
+│   └── WordSearchGrid.tsx    # Interactive word search component
+├── start-backend.sh          # Python backend startup script
+└── start-frontend.sh         # Next.js frontend startup script
 ```
 
 ## Technology Stack
 
-- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS
-- **Backend**: Next.js API Routes, Node.js
+- **Frontend**: Next.js 14, React, TypeScript, Tailwind CSS (UI only)
+- **Backend**: Python Flask + LangGraph (AI logic)
 - **AI Integration**:
-  - Claude Sonnet 4.5 for puzzle generation
-  - LangChain for AI orchestration
-  - Wikipedia API for content research
+  - **LangGraph**: Multi-agent workflow orchestration
+  - **Claude Sonnet 4.5**: Advanced term extraction and puzzle generation
+  - **LangChain Anthropic**: Claude API integration
+  - **Wikipedia API**: Content research and analysis
 - **Styling**: Tailwind CSS with custom biology theme
 - **Icons**: Lucide React
 
@@ -114,10 +118,16 @@ PORT=8000
 3. **Game Page**: Interactive word search grid with sidebar
 4. **Results Page**: Score breakdown and educational content
 
-## API Endpoints
+## API Architecture
 
-- `POST /api/game/create` - Creates new game from topic
-- `POST /api/game/submit` - Submits found words and returns results
+### Python Backend (Port 8000)
+- `POST /api/game/create` - LangGraph agents create sophisticated games
+- `POST /api/game/submit` - Calculate results and reveal missed words
+- `GET /health` - Health check endpoint
+
+### Next.js Frontend (Port 3000)
+- `POST /api/game/create` - Proxy to Python backend
+- `POST /api/game/submit` - Proxy to Python backend
 
 ## Key Features
 

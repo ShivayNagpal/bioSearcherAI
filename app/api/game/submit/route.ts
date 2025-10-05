@@ -10,12 +10,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Game ID and found words are required' }, { status: 400 })
     }
 
-    // Forward request to Python backend
+    // Forward to Python LangGraph backend
     const pythonResponse = await fetch(`${PYTHON_API_URL}/api/game/submit`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ gameId, foundWords }),
     })
 
@@ -27,14 +25,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const results = await pythonResponse.json()
-    return NextResponse.json(results)
+    return NextResponse.json(await pythonResponse.json())
 
   } catch (error) {
     console.error('Error submitting game:', error)
-    return NextResponse.json(
-      { error: 'Failed to connect to game service' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Failed to connect to LangGraph backend' }, { status: 500 })
   }
 }
