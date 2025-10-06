@@ -9,6 +9,9 @@ interface GameResult {
   targetWords: string[]
   foundWords: string[]
   missedWords: string[]
+  distractorWords: string[]
+  targetDescriptions: Record<string, string>
+  distractorDescriptions: Record<string, string>
   score: number
   totalWords: number
 }
@@ -168,41 +171,92 @@ function ResultsPageContent() {
           </div>
         </div>
 
-        {/* All Target Words (for learning) */}
+        {/* Target Words with Descriptions */}
         <div className="bg-white rounded-lg p-6 shadow-lg mt-6">
           <h3 className="font-bold text-biology-green mb-4 flex items-center text-xl">
             <Trophy className="w-6 h-6 mr-2" />
-            All Words Related to "{results.topic}"
+            Target Words: "{results.topic}"
           </h3>
           <p className="text-gray-600 mb-4">
-            Here are all the biology terms that were hidden in the word search:
+            Here are all the biology terms related to the topic that were hidden in the word search:
           </p>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="space-y-4">
             {results.targetWords.map((word, index) => {
               const wasFound = results.foundWords.some(found => found.toUpperCase() === word.toUpperCase())
+              const description = results.targetDescriptions?.[word] || 'No description available'
               return (
                 <div
                   key={index}
-                  className={`p-3 rounded border-2 ${
+                  className={`p-4 rounded-lg border-2 ${
                     wasFound
-                      ? 'bg-green-50 border-green-200 text-green-800'
-                      : 'bg-gray-50 border-gray-200 text-gray-800'
+                      ? 'bg-green-50 border-green-200'
+                      : 'bg-gray-50 border-gray-200'
                   }`}
                 >
-                  <div className="flex items-center">
+                  <div className="flex items-start mb-2">
                     {wasFound ? (
-                      <CheckCircle className="w-4 h-4 text-green-600 mr-2" />
+                      <CheckCircle className="w-5 h-5 text-green-600 mr-3 mt-0.5 flex-shrink-0" />
                     ) : (
-                      <XCircle className="w-4 h-4 text-red-600 mr-2" />
+                      <XCircle className="w-5 h-5 text-red-600 mr-3 mt-0.5 flex-shrink-0" />
                     )}
-                    <span className="font-mono">{word}</span>
+                    <div className="flex-1">
+                      <span className={`font-mono font-bold text-lg ${
+                        wasFound ? 'text-green-800' : 'text-gray-800'
+                      }`}>
+                        {word}
+                      </span>
+                      {wasFound && (
+                        <span className="ml-2 text-xs bg-green-600 text-white px-2 py-1 rounded">FOUND</span>
+                      )}
+                      {!wasFound && (
+                        <span className="ml-2 text-xs bg-red-600 text-white px-2 py-1 rounded">MISSED</span>
+                      )}
+                    </div>
                   </div>
+                  <p className="text-gray-700 ml-8 text-sm leading-relaxed">{description}</p>
                 </div>
               )
             })}
           </div>
         </div>
+
+        {/* Distractor Words (Educational) */}
+        {results.distractorWords && results.distractorWords.length > 0 && (
+          <div className="bg-white rounded-lg p-6 shadow-lg mt-6">
+            <h3 className="font-bold text-purple-600 mb-4 flex items-center text-xl">
+              <Trophy className="w-6 h-6 mr-2" />
+              Distractor Words (Not Part of the Topic)
+            </h3>
+            <p className="text-gray-600 mb-4">
+              These words were also hidden in the grid, but they weren't related to "{results.topic}".
+              They were added to increase the challenge!
+            </p>
+
+            <div className="space-y-4">
+              {results.distractorWords.map((word, index) => {
+                const description = results.distractorDescriptions?.[word] || 'No description available'
+                return (
+                  <div
+                    key={index}
+                    className="p-4 rounded-lg border-2 bg-purple-50 border-purple-200"
+                  >
+                    <div className="flex items-start mb-2">
+                      <div className="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1">
+                        <span className="font-mono font-bold text-lg text-purple-800">
+                          {word}
+                        </span>
+                        <span className="ml-2 text-xs bg-purple-600 text-white px-2 py-1 rounded">DISTRACTOR</span>
+                      </div>
+                    </div>
+                    <p className="text-gray-700 ml-8 text-sm leading-relaxed">{description}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Play Again CTA */}
         <div className="text-center mt-8">

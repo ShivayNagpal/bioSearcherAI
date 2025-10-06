@@ -28,6 +28,8 @@ class ResearchState(TypedDict):
     topic: str
     target_terms: List[str]
     distractor_terms: List[str]
+    target_descriptions: Dict[str, str]
+    distractor_descriptions: Dict[str, str]
     research_complete: bool
 
 class BiologyGameAgent:
@@ -48,12 +50,14 @@ class BiologyGameAgent:
         # Add nodes
         workflow.add_node("research_topic", self._research_topic)
         workflow.add_node("find_distractors", self._find_distractors)
+        workflow.add_node("generate_descriptions", self._generate_descriptions)
         workflow.add_node("finalize", self._finalize_research)
 
         # Add edges
         workflow.set_entry_point("research_topic")
         workflow.add_edge("research_topic", "find_distractors")
-        workflow.add_edge("find_distractors", "finalize")
+        workflow.add_edge("find_distractors", "generate_descriptions")
+        workflow.add_edge("generate_descriptions", "finalize")
         workflow.add_edge("finalize", END)
 
         return workflow.compile()
@@ -247,6 +251,114 @@ class BiologyGameAgent:
             **state,
             "distractor_terms": distractor_terms,
             "messages": state["messages"] + [{"role": "assistant", "content": f"Found {len(distractor_terms)} distractor terms"}]
+        }
+
+    async def _generate_descriptions(self, state: ResearchState) -> ResearchState:
+        """Generate brief descriptions for all terms in parallel"""
+        import asyncio
+        import json
+
+        topic = state["topic"]
+        target_terms = state.get("target_terms", [])
+        distractor_terms = state.get("distractor_terms", [])
+
+        print(f"📝 LangGraph Node: _generate_descriptions starting (parallel mode)")
+
+        target_descriptions = {}
+        distractor_descriptions = {}
+
+        async def generate_target_descriptions():
+            """Generate target term descriptions"""
+            if not target_terms:
+                return {}
+
+            try:
+                target_prompt = f"""
+                For each of these biological terms related to "{topic}", provide a brief 1-2 sentence description.
+
+                Terms: {", ".join(target_terms)}
+
+                Return your response in JSON format as a dictionary where keys are the terms and values are the descriptions:
+                """
+
+                print("🤖 Generating target term descriptions...")
+                response = await self.llm.ainvoke(target_prompt)
+                print(f"🤖 Target descriptions response received")
+
+                # Try to parse as JSON
+                content = response.content.strip()
+                if content.startswith("```"):
+                    # Remove markdown code blocks
+                    content = content.split("```")[1]
+                    if content.startswith("json"):
+                        content = content[4:]
+                    content = content.strip()
+
+                descriptions = json.loads(content)
+                print(f"✅ Parsed {len(descriptions)} target descriptions")
+                return descriptions
+            except json.JSONDecodeError:
+                print("⚠️ Failed to parse target descriptions as JSON, using fallback")
+                return {term: f"A biological term related to {topic}" for term in target_terms}
+            except Exception as e:
+                print(f"⚠️ Error generating target descriptions: {e}")
+                return {term: f"A biological term related to {topic}" for term in target_terms}
+
+        async def generate_distractor_descriptions():
+            """Generate distractor term descriptions"""
+            if not distractor_terms:
+                return {}
+
+            try:
+                distractor_prompt = f"""
+                For each of these biological terms (which are different from the main topic "{topic}"), provide a brief 1-2 sentence description.
+
+                Terms: {", ".join(distractor_terms)}
+
+                Return your response in JSON format as a dictionary where keys are the terms and values are the descriptions:
+                """
+
+                print("🤖 Generating distractor term descriptions...")
+                response = await self.llm.ainvoke(distractor_prompt)
+                print(f"🤖 Distractor descriptions response received")
+
+                # Try to parse as JSON
+                content = response.content.strip()
+                if content.startswith("```"):
+                    content = content.split("```")[1]
+                    if content.startswith("json"):
+                        content = content[4:]
+                    content = content.strip()
+
+                descriptions = json.loads(content)
+                print(f"✅ Parsed {len(descriptions)} distractor descriptions")
+                return descriptions
+            except json.JSONDecodeError:
+                print("⚠️ Failed to parse distractor descriptions as JSON, using fallback")
+                return {term: "A biological term from a different topic area" for term in distractor_terms}
+            except Exception as e:
+                print(f"⚠️ Error generating distractor descriptions: {e}")
+                return {term: "A biological term from a different topic area" for term in distractor_terms}
+
+        try:
+            # Run both description generation tasks in parallel
+            print("⚡ Running description generation in parallel...")
+            target_descriptions, distractor_descriptions = await asyncio.gather(
+                generate_target_descriptions(),
+                generate_distractor_descriptions()
+            )
+            print("✅ Parallel description generation complete")
+
+        except Exception as e:
+            print(f"⚠️ Error in parallel description generation: {e}")
+            target_descriptions = {term: f"A biological term related to {topic}" for term in target_terms}
+            distractor_descriptions = {term: "A biological term from a different topic area" for term in distractor_terms}
+
+        return {
+            **state,
+            "target_descriptions": target_descriptions,
+            "distractor_descriptions": distractor_descriptions,
+            "messages": state["messages"] + [{"role": "assistant", "content": "Generated descriptions for all terms"}]
         }
 
     async def _finalize_research(self, state: ResearchState) -> ResearchState:

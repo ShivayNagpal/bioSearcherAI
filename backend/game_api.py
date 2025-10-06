@@ -67,6 +67,8 @@ def create_game():
                 'topic': game_data['topic'],
                 'targetWords': game_data['targetWords'],
                 'distractorWords': game_data['distractorWords'],
+                'targetDescriptions': game_data['targetDescriptions'],
+                'distractorDescriptions': game_data['distractorDescriptions'],
                 'grid': game_data['grid']
             }
 
@@ -112,9 +114,13 @@ async def create_game_async(game, topic):
 
     target_words = result_state.get("target_terms", [])
     distractor_words = result_state.get("distractor_terms", [])
+    target_descriptions = result_state.get("target_descriptions", {})
+    distractor_descriptions = result_state.get("distractor_descriptions", {})
 
     print(f"🎯 Extracted target_words: {target_words}")
     print(f"🔀 Extracted distractor_words: {distractor_words}")
+    print(f"📝 Extracted target_descriptions: {len(target_descriptions)} items")
+    print(f"📝 Extracted distractor_descriptions: {len(distractor_descriptions)} items")
 
     if not target_words:
         print("❌ LangGraph workflow completed but no target terms found")
@@ -138,6 +144,8 @@ async def create_game_async(game, topic):
         'topic': topic,
         'targetWords': target_words,
         'distractorWords': distractor_words,
+        'targetDescriptions': target_descriptions,
+        'distractorDescriptions': distractor_descriptions,
         'grid': grid
     }
 
@@ -172,6 +180,9 @@ def submit_game():
             'targetWords': target_words,
             'foundWords': correct_found,
             'missedWords': missed_words,
+            'distractorWords': game_data['distractorWords'],
+            'targetDescriptions': game_data.get('targetDescriptions', {}),
+            'distractorDescriptions': game_data.get('distractorDescriptions', {}),
             'score': score,
             'totalWords': len(target_words)
         }
